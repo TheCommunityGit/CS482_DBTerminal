@@ -265,8 +265,72 @@ def search_display():
             break
 
 def insert_display():
-    print("\nInserting a new digital display...\n")
-    input("Press Enter to return to the main menu.")
+    global dbCursor, mydb  # Use the global database connection and cursor
+
+    print("\nEnter Digital Display Information...\n")
+    # Get input for the new digital display
+    serial_no = input("Enter Serial No (max 10 chars): ").strip()
+    scheduler_system = input("Enter Scheduler System (max 10 chars): ").strip()
+    model_no = input("Enter Model No (max 10 chars): ").strip()
+
+    # Validate input lengths
+    if len(serial_no) > 10 or len(scheduler_system) > 10 or len(model_no) > 10:
+        print("\nError: Inputs exceed maximum length. Please try again.")
+        return
+
+    # Check if the model exists in the Model table
+    query_check_model = "SELECT modelNo FROM Model WHERE modelNo = %s"
+    dbCursor.execute(query_check_model, (model_no,))
+    model_exists = dbCursor.fetchone()
+
+    if not model_exists:
+        # Model does not exist, collect model information
+        print(f"\nModel '{model_no}' does not exist. Please enter new model details.\n")
+
+        try:
+            width = float(input("Enter Model Width (numeric, max 6 digits, 2 decimals): "))
+            height = float(input("Enter Model Height (numeric, max 6 digits, 2 decimals): "))
+            weight = float(input("Enter Model Weight (numeric, max 6 digits, 2 decimals): "))
+            depth = float(input("Enter Model Depth (numeric, max 6 digits, 2 decimals): "))
+            screen_size = float(input("Enter Model Screen Size (numeric, max 6 digits, 2 decimals): "))
+
+            # Validate numeric constraints (e.g., non-negative dimensions)
+            if width <= 0 or height <= 0 or weight <= 0 or depth <= 0 or screen_size <= 0:
+                print("\nError: All dimensions must be positive numbers. Aborting.")
+                return
+
+            # Insert the new model into the Model table
+            query_insert_model = """
+                INSERT INTO Model (modelNo, width, height, weight, depth, screenSize)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            dbCursor.execute(query_insert_model, (model_no, width, height, weight, depth, screen_size))
+            mydb.commit()
+            print("\nNew model inserted successfully.\n")
+
+        except ValueError:
+            print("\nError: Invalid numeric input. Aborting.")
+            return
+        except sql.Error as e:
+            print(f"\nError inserting new model: {e}")
+            return
+
+    # Insert the new digital display
+    print("\nInserting a new Digital Display...\n")
+    try:
+        query_insert_display = """
+            INSERT INTO DigitalDisplay (serialNo, schedulerSystem, modelNo)
+            VALUES (%s, %s, %s)
+        """
+        dbCursor.execute(query_insert_display, (serial_no, scheduler_system, model_no))
+        mydb.commit()
+        print("\nNew digital display inserted successfully.\n")
+
+        # Display all digital displays after insertion
+        display_all()
+
+    except sql.Error as e:
+        print(f"\nError inserting new digital display: {e}")
 
 def delete_display():
     print("\nDeleting a digital display...\n")
