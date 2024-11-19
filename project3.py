@@ -333,12 +333,129 @@ def insert_display():
         print(f"\nError inserting new digital display: {e}")
 
 def delete_display():
-    print("\nDeleting a digital display...\n")
-    input("Press Enter to return to the main menu.")
+    global dbCursor, mydb  # Use global variables for database connection and cursor
+
+    console = Console()
+    
+    # Display all available digital displays for user selection
+    display_all()
+
+    # Prompt user to enter the Serial No of the display to delete
+    serial_no_to_delete = input("\nEnter the Serial No of the display to delete: ").strip()
+
+    try:
+        # Check if the display exists
+        query_check_display = "SELECT * FROM digitalDisplay WHERE serialNo = %s"
+        dbCursor.execute(query_check_display, (serial_no_to_delete,))
+        display_to_delete = dbCursor.fetchone()
+
+        if not display_to_delete:
+            print(f"\nNo digital display found with Serial No: {serial_no_to_delete}.")
+            return
+
+        # Confirm deletion
+        confirmation = input(f"Are you sure you want to delete the display with Serial No '{serial_no_to_delete}'? (yes/no): ").lower()
+        if confirmation != "yes":
+            print("\nDeletion canceled.")
+            return
+
+        # Get the associated Model No before deletion
+        model_no_to_delete = display_to_delete[2]  # Assuming modelNo is the 3rd column in the table
+
+        # Delete the digital display from the database
+        query_delete_display = "DELETE FROM digitalDisplay WHERE serialNo = %s"
+        dbCursor.execute(query_delete_display, (serial_no_to_delete,))
+        mydb.commit()
+
+        print(f"\nDigital display with Serial No '{serial_no_to_delete}' has been deleted successfully.")
+
+        # Check if any other displays are using the same Model No
+        query_check_model = "SELECT COUNT(*) FROM digitalDisplay WHERE modelNo = %s"
+        dbCursor.execute(query_check_model, (model_no_to_delete,))
+        model_count = dbCursor.fetchone()[0]
+
+        if model_count == 0:
+            # No other displays use this Model No, so delete the model
+            query_delete_model = "DELETE FROM Model WHERE modelNo = %s"
+            dbCursor.execute(query_delete_model, (model_no_to_delete,))
+            mydb.commit()
+            print(f"Model No '{model_no_to_delete}' has also been deleted as it is no longer in use.")
+
+        # Refresh the list of digital displays
+        queryAllDigitalDisplays()
+        console.print("\nUpdated list of digital displays:")
+        display_all()
+
+    except sql.Error as e:
+        print(f"\nError occurred during deletion: {e}")
+
 
 def update_display():
-    print("\nUpdating a digital display...\n")
-    input("Press Enter to return to the main menu.")
+    console = Console()
+    clear_terminal()
+    print("\n--- Update Digital Display ---\n")
+
+    # Step 1: Display current digital displays
+    display_all()  # Show all digital displays for reference
+
+    # Step 2: Get the Serial No of the display to update
+    serial_no_to_update = input("Enter the Serial No of the display you want to update: ").strip()
+
+    try:
+        # Check if the display exists
+        query_fetch_display = "SELECT * FROM DigitalDisplay WHERE serialNo = %s"
+        dbCursor.execute(query_fetch_display, (serial_no_to_update,))
+        display = dbCursor.fetchone()
+
+        if not display:
+            print(f"\nNo digital display found with Serial No: {serial_no_to_update}.")
+            return
+
+        # Step 3: Display current details
+        print(f"\nCurrent details for Digital Display (Serial No: {serial_no_to_update}):")
+        print(f"Scheduler System: {display[1]}")  # Assuming 2nd column is schedulerSystem
+        print(f"Model No: {display[2]}")  # Assuming 3rd column is modelNo
+
+        # Step 4: Prompt for new values
+        scheduler_system = input("Enter new Scheduler System (leave blank to keep current): ").strip()
+        model_no = input("Enter new Model No (leave blank to keep current): ").strip()
+
+        # Use existing values if no input is provided
+        if not scheduler_system:
+            scheduler_system = display[1]
+        if not model_no:
+            model_no = display[2]
+
+        # Step 5: Validate new Model No if changed
+        if model_no != display[2]:
+            query_check_model = "SELECT * FROM Model WHERE modelNo = %s"
+            dbCursor.execute(query_check_model, (model_no,))
+            model_exists = dbCursor.fetchone()
+
+            if not model_exists:
+                print(f"\nError: Model No '{model_no}' does not exist. Please ensure the model is created first.")
+                return
+
+        # Step 6: Update the record
+        query_update_display = """
+            UPDATE DigitalDisplay
+            SET schedulerSystem = %s, modelNo = %s
+            WHERE serialNo = %s
+        """
+        dbCursor.execute(query_update_display, (scheduler_system, model_no, serial_no_to_update))
+        mydb.commit()
+
+        print(f"\nDigital Display (Serial No: {serial_no_to_update}) updated successfully.")
+
+        # Step 7: Display updated list
+        print("\n--- Updated Digital Displays ---")
+        display_all()
+
+    except sql.Error as e:
+        print(f"\nError updating the digital display: {e}")
+
+    input("Press Enter to return to the main menu...")
+
 
 def logout():
     print("\nLogging out...\n")
