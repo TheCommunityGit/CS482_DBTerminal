@@ -198,8 +198,71 @@ options = [
 ]
 
 def search_display():
-    print("\nSearching for digital displays by scheduler system...\n")
-    input("Press Enter to return to the main menu.")
+    global dbCursor  # Use the global database cursor
+
+    # Fetch available scheduler systems from the database
+    scheduler_List = []
+    query_scheduler = "SELECT DISTINCT schedulerSystem FROM DigitalDisplay"
+    dbCursor.execute(query_scheduler)
+    scheduler_List = [row[0] for row in dbCursor.fetchall()]
+
+    # Get input for the scheduler system
+    scheduler_system = input("Enter a Scheduler System: ")
+
+    # Check if the scheduler system exists
+    if scheduler_system not in scheduler_List:
+        print("\nInvalid Scheduler System. Exiting...\n")
+        return
+
+    print(f"\nSearching for digital displays by scheduler system: {scheduler_system}...\n")
+
+    # Prepare to display results in a table
+    console = Console()
+    table = Table(title=f"DDs for SS: {scheduler_system}")
+
+    # Add table columns
+    table.add_column("Model No", justify="left")
+
+    # Query for digital displays with the given scheduler system
+    query_display = "SELECT modelNo FROM DigitalDisplay WHERE schedulerSystem = %s"
+    dbCursor.execute(query_display, (scheduler_system,))
+
+    # Store results for menu and populate the table
+    displays = [{"model_no": row[0]} for row in dbCursor.fetchall()]
+    for display in displays:
+        table.add_row(display["model_no"])
+
+    # Print the table
+    console.print(table)
+
+    if not displays:
+        print("\nNo digital displays found for the selected scheduler system.\n")
+        return
+
+    while True:
+        # Create a menu for selecting a display or returning to the main menu
+        options = [f"{display['model_no']}" for display in displays]
+        options.append("Return to Main Menu")
+
+        # Show menu and get user choice
+        terminal_menu = TerminalMenu(options, title="\nSelect a display to view more information:")
+        choice = terminal_menu.show()
+
+        if choice is not None and choice < len(displays):
+            # Fetch and display more information for the selected display
+            selected_display = displays[choice]
+            model_number = selected_display["model_no"]
+
+            # Use the queryMoreInfo function to get additional details
+            model_table = queryMoreInfo(model_number)
+
+            if model_table:
+                console.print(model_table)
+            else:
+                print(f"\nNo additional information found for Model No: {model_number}")
+        elif choice == len(displays):  # User chooses "Return to Main Menu"
+            print("\nReturning to the main menu...")
+            break
 
 def insert_display():
     print("\nInserting a new digital display...\n")
