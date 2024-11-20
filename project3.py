@@ -144,6 +144,28 @@ def login():
         else:
             print("Invalid input.\nPlease press 'l' to log in, 'r' to reset the form, or 'q' to quit:")
 
+def display_table_only():
+    console = Console()
+    table = Table(title="Digital Displays")
+
+    # Add table columns for all attributes in the DigitalDisplay schema
+    table.add_column("Serial No", justify="left")
+    table.add_column("Scheduler System", justify="left")
+    table.add_column("Model No", justify="left")
+
+    # Fetch all digital displays from the database
+    queryAllDigitalDisplays()
+
+    # Populate the table with all rows
+    for display in digital_displays:
+        table.add_row(
+            display["serial_no"],
+            display["scheduler_system"],
+            display["model_no"]
+        )
+
+    # Print the table
+    console.print(table)
 
 def display_all():
     console = Console()
@@ -338,7 +360,7 @@ def insert_display():
         print("\nNew digital display inserted successfully.\n")
 
         # Display all digital displays after insertion
-        display_all()
+        display_table_only()
 
     except sql.Error as e:
         print(f"\nError inserting new digital display: {e}")
@@ -349,7 +371,7 @@ def delete_display():
     console = Console()
 
     # Display all available digital displays for user selection
-    display_all()
+    display_table_only()
 
     # Prompt user to enter the Serial No of the display to delete
     serial_no_to_delete = input("\nEnter the Serial No of the display to delete: ").strip()
@@ -395,7 +417,7 @@ def delete_display():
         # Refresh the list of digital displays
         queryAllDigitalDisplays()
         console.print("\nUpdated list of digital displays:")
-        display_all()
+        display_table_only()
 
     except sql.Error as e:
         print(f"\nError occurred during deletion: {e}")
@@ -407,7 +429,7 @@ def update_display():
     print("\n--- Update Digital Display ---\n")
 
     # Step 1: Display current digital displays
-    display_all()  # Show all digital displays for reference
+    display_table_only()  # Show all digital displays for reference
 
     # Step 2: Get the Serial No of the display to update
     serial_no_to_update = input("Enter the Serial No of the display you want to update: ").strip()
@@ -460,7 +482,7 @@ def update_display():
 
         # Step 7: Display updated list
         print("\n--- Updated Digital Displays ---")
-        display_all()
+        display_table_only()
 
     except sql.Error as e:
         print(f"\nError updating the digital display: {e}")
