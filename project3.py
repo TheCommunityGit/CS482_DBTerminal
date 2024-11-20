@@ -4,6 +4,7 @@ from rich.console import Console
 import mysql.connector as sql
 import sys
 import getpass
+import os
 
 # Global variable for storing digital display data
 digital_displays = None
@@ -468,12 +469,10 @@ def update_display():
 
 
 def logout():
-    print("\nLogging out...\n")
     clear_terminal()
-    exit()
+    print("\nUser has been logged out.\n")
+    login()
 
-
-import os
 
 def clear_terminal():
     # For Windows
