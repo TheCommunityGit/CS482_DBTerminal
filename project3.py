@@ -114,7 +114,7 @@ def login():
                         f"Host: {db_host}\n"
                         f"Database: {db_name}\n"
                         f"Username: {username}\n"
-                        "Press 'l' to confirm and log in, or 'r' to reset the form: ").lower()
+                        "Please press 'l' to confirm and log in, 'r' to reset the form, or 'q' to quit: ").lower()
 
         if action == 'l':
             # After confirmation, attempt to connect to the database
@@ -135,8 +135,13 @@ def login():
             clear_terminal()
             print("\nForm reset. Please enter the details again.")
             continue  # Restart the form collection process
+
+        elif action == 'q' :
+            print("\nQuitting terminal login.")
+            quit()
+
         else:
-            print("Invalid input. Please press 'l' to log in or 'r' to reset the form.")
+            print("Invalid input.\nPlease press 'l' to log in, 'r' to reset the form, or 'q' to quit:")
 
 
 # Function to display all digital displays
