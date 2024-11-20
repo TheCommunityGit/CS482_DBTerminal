@@ -225,16 +225,15 @@ def search_display():
     global dbCursor  # Use the global database cursor
 
     # Fetch available scheduler systems from the database
-    scheduler_List = []
     query_scheduler = "SELECT DISTINCT schedulerSystem FROM DigitalDisplay"
     dbCursor.execute(query_scheduler)
-    scheduler_List = [row[0] for row in dbCursor.fetchall()]
+    scheduler_list = [row[0] for row in dbCursor.fetchall()]
 
     # Get input for the scheduler system
     scheduler_system = input("Enter a Scheduler System: ")
 
     # Check if the scheduler system exists
-    if scheduler_system not in scheduler_List:
+    if scheduler_system not in scheduler_list:
         print("\nInvalid Scheduler System. Exiting...\n")
         return
 
@@ -242,48 +241,72 @@ def search_display():
 
     # Prepare to display results in a table
     console = Console()
-    table = Table(title=f"DDs for SS: {scheduler_system}")
+    table = Table(title=f"Digital Displays for Scheduler System: {scheduler_system}")
 
-    # Add table columns
+    # Add table columns (all fields in DigitalDisplay schema)
+    table.add_column("Serial No", justify="left")
+    table.add_column("Scheduler System", justify="left")
     table.add_column("Model No", justify="left")
 
     # Query for digital displays with the given scheduler system
-    query_display = "SELECT modelNo FROM DigitalDisplay WHERE schedulerSystem = %s"
+    query_display = """
+        SELECT serialNo, schedulerSystem, modelNo
+        FROM DigitalDisplay
+        WHERE schedulerSystem = %s
+    """
     dbCursor.execute(query_display, (scheduler_system,))
+    displays = dbCursor.fetchall()
 
-    # Store results for menu and populate the table
-    displays = [{"model_no": row[0]} for row in dbCursor.fetchall()]
-    for display in displays:
-        table.add_row(display["model_no"])
+    # Populate the table with all retrieved fields
+    for serial_no, scheduler_system, model_no in displays:
+        table.add_row(serial_no, scheduler_system, model_no)
 
     # Print the table
     console.print(table)
 
+    # Handle case when no results are found
     if not displays:
         print("\nNo digital displays found for the selected scheduler system.\n")
         return
 
+    # Menu for further actions
     while True:
-        # Create a menu for selecting a display or returning to the main menu
-        options = [f"{display['model_no']}" for display in displays]
+        # Create menu options with serial number and model number
+        options = [f"Serial No: {display[0]}, Model No: {display[2]}" for display in displays]
         options.append("Return to Main Menu")
 
         # Show menu and get user choice
-        terminal_menu = TerminalMenu(options, title="\nSelect a display to view more information:")
+        terminal_menu = TerminalMenu(options, title="\nSelect a Display to view Model information:")
         choice = terminal_menu.show()
 
         if choice is not None and choice < len(displays):
-            # Fetch and display more information for the selected display
+            # Fetch selected display details
             selected_display = displays[choice]
-            model_number = selected_display["model_no"]
+            serial_no, scheduler_system, model_no = selected_display
 
-            # Use the queryMoreInfo function to get additional details
-            model_table = queryMoreInfo(model_number)
+            # Query detailed model information
+            query_model = """
+                SELECT modelNo, width, height, weight, depth, screenSize
+                FROM Model
+                WHERE modelNo = %s
+            """
+            dbCursor.execute(query_model, (model_no,))
+            model_info = dbCursor.fetchone()
 
-            if model_table:
-                console.print(model_table)
+            # Display the detailed model information in a table
+            if model_info:
+                detailed_table = Table(title=f"Model Details for Model No: {model_no}")
+
+                detailed_table.add_column("Field", justify="left")
+                detailed_table.add_column("Value", justify="left")
+
+                fields = ["Model No", "Width", "Height", "Weight", "Depth", "Screen Size"]
+                for field, value in zip(fields, model_info):
+                    detailed_table.add_row(field, str(value))
+
+                console.print(detailed_table)
             else:
-                print(f"\nNo additional information found for Model No: {model_number}")
+                print(f"\nNo additional model information found for Model No: {model_no}")
         elif choice == len(displays):  # User chooses "Return to Main Menu"
             print("\nReturning to the main menu...")
             break
@@ -504,7 +527,8 @@ options = [
     "3. Insert a new digital display",
     "4. Delete a digital display",
     "5. Update a digital display",
-    "6. Logout"
+    "6. Logout",
+    "7. Logout and exit"
 ]
 # Main program loop
 def main():
@@ -525,6 +549,9 @@ def main():
             update_display()
         elif choice == 5:
             logout()
+        elif choice ==6:
+            clear_terminal()
+            quit()
         else:
             print("Invalid choice, please try again.")
 
