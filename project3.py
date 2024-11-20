@@ -139,52 +139,57 @@ def login():
             print("Invalid input. Please press 'l' to log in or 'r' to reset the form.")
 
 
-# Function to display all digital displays
 def display_all():
     console = Console()
     table = Table(title="Digital Displays")
 
-    # Add table columns (only relevant columns from the schema)
+    # Add table columns for all attributes in the DigitalDisplay schema
+    table.add_column("Serial No", justify="left")
+    table.add_column("Scheduler System", justify="left")
     table.add_column("Model No", justify="left")
 
+    # Fetch all digital displays from the database
     queryAllDigitalDisplays()
-    # Populate the table with data
+
+    # Populate the table with all rows
     for display in digital_displays:
         table.add_row(
+            display["serial_no"],
+            display["scheduler_system"],
             display["model_no"]
         )
 
     # Print the table
     console.print(table)
 
+    # Prepare a list of unique model numbers for the menu
+    unique_models = list({display["model_no"] for display in digital_displays})
+
     while True:  # Keep the user in the display menu until they choose "Return to Main Menu"
-        # Create a list of options for the TerminalMenu
+        # Create menu options with unique model numbers
         options = [
-            f"{display['model_no']}"
-            for display in digital_displays
+            f"{model_no}" for model_no in unique_models
         ]
         options.append("Return to Main Menu")
 
         # Create and display the menu
-        terminal_menu = TerminalMenu(options, title="\nSelect a display to view more information:")
+        terminal_menu = TerminalMenu(options, title="\nSelect a model number to view more information:")
         choice = terminal_menu.show()
 
-        if choice is not None and choice < len(digital_displays):
-            selected_display = digital_displays[choice]
-            model_number = selected_display["model_no"]
-
-            # Fetch more information using the model number
-            model_table = queryMoreInfo(model_number)
+        if choice is not None and choice < len(unique_models):
+            # Fetch more information using the selected model number
+            selected_model_number = unique_models[choice]
+            model_table = queryMoreInfo(selected_model_number)
 
             if model_table:
                 # Display the model information as a table
                 console.print(model_table)
             else:
-                print(f"\nNo information found for Model No: {model_number}")
-        elif choice == len(digital_displays):  # User chooses "Return to Main Menu"
+                print(f"\nNo information found for Model No: {selected_model_number}")
+        elif choice == len(unique_models):  # User chooses "Return to Main Menu"
             print("\nReturning to the main menu...")
+            clear_terminal()
             break  # Exit the loop and return to the main menu
-
 
 # Main menu options
 options = [
@@ -336,7 +341,7 @@ def delete_display():
     global dbCursor, mydb  # Use global variables for database connection and cursor
 
     console = Console()
-    
+
     # Display all available digital displays for user selection
     display_all()
 
