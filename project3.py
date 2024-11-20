@@ -6,14 +6,14 @@ import sys
 import getpass
 import os
 
-# Global variable for storing digital display data
+# Global variable for storing digital display data and db connections
 digital_displays = None
 dbCursor = None
-mydb = None  # Global variable for the database connection
+mydb = None
 
-# Connect to the MySQL database as required in project description
+# Connect to the MySQL database
 def connectToDb(hostin, name, username, password):
-    global dbCursor, mydb  # Declare as global so they are accessible outside this function
+    global dbCursor, mydb
     if hostin == "localhost":
         hostin = "127.0.0.1"
 
@@ -46,8 +46,6 @@ def queryAllDigitalDisplays():
 
     # Executing the query
     dbCursor.execute(query)
-
-    # Fetching all the results
     results = dbCursor.fetchall()
 
     # Convert results into a list of dictionaries for easier access
@@ -58,7 +56,6 @@ def queryAllDigitalDisplays():
 
 
 def queryMoreInfo(modelNumber):
-    # Updated query to fetch all fields from the 'model' table
     query = "SELECT * FROM model WHERE modelNo = %s"
 
     dbCursor.execute(query, (modelNumber,))
@@ -67,7 +64,7 @@ def queryMoreInfo(modelNumber):
     info = dbCursor.fetchall()
 
     if info:
-        # Create a table to display the fetched information
+        # Create a table to display the information
         console = Console()
         table = Table(title=f"Details for Model No: {modelNumber}")
 
@@ -90,7 +87,6 @@ def queryMoreInfo(modelNumber):
                 str(row[5])   # Screen Size
             )
 
-        # Return the formatted table
         return table
     else:
         return None
@@ -110,7 +106,7 @@ def login():
         password = getpass.getpass("Enter password: ")
 
         clear_terminal()
-        # Ask the user to confirm or reset the form
+
         action = input("\nYou have entered the following details:\n"
                         f"Host: {db_host}\n"
                         f"Database: {db_name}\n"
@@ -164,19 +160,18 @@ def display_table_only():
             display["model_no"]
         )
 
-    # Print the table
     console.print(table)
 
 def display_all():
     console = Console()
     table = Table(title="Digital Displays")
 
-    # Add table columns for all attributes in the DigitalDisplay schema
+
     table.add_column("Serial No", justify="left")
     table.add_column("Scheduler System", justify="left")
     table.add_column("Model No", justify="left")
 
-    # Fetch all digital displays from the database
+
     queryAllDigitalDisplays()
 
     # Populate the table with all rows
@@ -187,7 +182,7 @@ def display_all():
             display["model_no"]
         )
 
-    # Print the table
+
     console.print(table)
 
     # Prepare a list of unique model numbers for the menu
@@ -205,7 +200,6 @@ def display_all():
         choice = terminal_menu.show()
 
         if choice is not None and choice < len(unique_models):
-            # Fetch more information using the selected model number
             selected_model_number = unique_models[choice]
             model_table = queryMoreInfo(selected_model_number)
 
@@ -217,19 +211,19 @@ def display_all():
         elif choice == len(unique_models):  # User chooses "Return to Main Menu"
             print("\nReturning to the main menu...")
             clear_terminal()
-            break  # Exit the loop and return to the main menu
+            break  # Exit the loop and return to  main menu
 
 
 
 def search_display():
-    global dbCursor  # Use the global database cursor
+    global dbCursor
 
     # Fetch available scheduler systems from the database
     query_scheduler = "SELECT DISTINCT schedulerSystem FROM DigitalDisplay"
     dbCursor.execute(query_scheduler)
     scheduler_list = [row[0] for row in dbCursor.fetchall()]
 
-    # Get input for the scheduler system
+
     scheduler_system = input("Enter a Scheduler System: ")
 
     # Check if the scheduler system exists
@@ -243,7 +237,7 @@ def search_display():
     console = Console()
     table = Table(title=f"Digital Displays for Scheduler System: {scheduler_system}")
 
-    # Add table columns (all fields in DigitalDisplay schema)
+
     table.add_column("Serial No", justify="left")
     table.add_column("Scheduler System", justify="left")
     table.add_column("Model No", justify="left")
@@ -261,7 +255,7 @@ def search_display():
     for serial_no, scheduler_system, model_no in displays:
         table.add_row(serial_no, scheduler_system, model_no)
 
-    # Print the table
+
     console.print(table)
 
     # Handle case when no results are found
@@ -271,11 +265,11 @@ def search_display():
 
     # Menu for further actions
     while True:
-        # Create menu options with serial number and model number
+        # Create menu options
         options = [f"Serial No: {display[0]}, Model No: {display[2]}" for display in displays]
         options.append("Return to Main Menu")
 
-        # Show menu and get user choice
+
         terminal_menu = TerminalMenu(options, title="\nSelect a Display to view Model information:")
         choice = terminal_menu.show()
 
@@ -293,7 +287,7 @@ def search_display():
             dbCursor.execute(query_model, (model_no,))
             model_info = dbCursor.fetchone()
 
-            # Display the detailed model information in a table
+            # Display the detailed model information
             if model_info:
                 detailed_table = Table(title=f"Model Details for Model No: {model_no}")
 
@@ -312,10 +306,10 @@ def search_display():
             break
 
 def insert_display():
-    global dbCursor, mydb  # Use the global database connection and cursor
+    global dbCursor, mydb
 
     print("\nEnter Digital Display Information...\n")
-    # Get input for the new digital display
+
     serial_no = input("Enter Serial No (max 10 chars): ").strip()
     scheduler_system = input("Enter Scheduler System (max 10 chars): ").strip()
     model_no = input("Enter Model No (max 10 chars): ").strip()
@@ -373,21 +367,21 @@ def insert_display():
         mydb.commit()
         print("\nNew digital display inserted successfully.\n")
 
-        # Display all digital displays after insertion
+
         display_table_only()
 
     except sql.Error as e:
         print(f"\nError inserting new digital display: {e}")
 
 def delete_display():
-    global dbCursor, mydb  # Use global variables for database connection and cursor
+    global dbCursor, mydb
 
     console = Console()
 
-    # Display all available digital displays for user selection
+
     display_table_only()
 
-    # Prompt user to enter the Serial No of the display to delete
+
     serial_no_to_delete = input("\nEnter the Serial No of the display to delete: ").strip()
 
     try:
@@ -407,7 +401,7 @@ def delete_display():
             return
 
         # Get the associated Model No before deletion
-        model_no_to_delete = display_to_delete[2]  # Assuming modelNo is the 3rd column in the table
+        model_no_to_delete = display_to_delete[2]
 
         # Delete the digital display from the database
         query_delete_display = "DELETE FROM digitalDisplay WHERE serialNo = %s"
@@ -442,10 +436,10 @@ def update_display():
     clear_terminal()
     print("\n--- Update Digital Display ---\n")
 
-    # Step 1: Display current digital displays
-    display_table_only()  # Show all digital displays for reference
 
-    # Step 2: Get the Serial No of the display to update
+    display_table_only()
+
+
     serial_no_to_update = input("Enter the Serial No of the display you want to update: ").strip()
 
     try:
@@ -458,12 +452,12 @@ def update_display():
             print(f"\nNo digital display found with Serial No: {serial_no_to_update}.")
             return
 
-        # Step 3: Display current details
+        #  Display current details
         print(f"\nCurrent details for Digital Display (Serial No: {serial_no_to_update}):")
         print(f"Scheduler System: {display[1]}")  # Assuming 2nd column is schedulerSystem
         print(f"Model No: {display[2]}")  # Assuming 3rd column is modelNo
 
-        # Step 4: Prompt for new values
+        #  Prompt for new values
         scheduler_system = input("Enter new Scheduler System (leave blank to keep current): ").strip()
         model_no = input("Enter new Model No (leave blank to keep current): ").strip()
 
@@ -483,7 +477,7 @@ def update_display():
                 print(f"\nError: Model No '{model_no}' does not exist. Please ensure the model is created first.")
                 return
 
-        # Step 6: Update the record
+        #  Update the record
         query_update_display = """
             UPDATE DigitalDisplay
             SET schedulerSystem = %s, modelNo = %s
@@ -494,7 +488,7 @@ def update_display():
 
         print(f"\nDigital Display (Serial No: {serial_no_to_update}) updated successfully.")
 
-        # Step 7: Display updated list
+        #  Display updated list
         print("\n--- Updated Digital Displays ---")
         display_table_only()
 
