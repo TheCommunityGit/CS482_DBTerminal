@@ -219,16 +219,7 @@ def display_all():
             clear_terminal()
             break  # Exit the loop and return to the main menu
 
-# Main menu options
-options = [
-    "1. Display all digital displays",
-    "2. Search for digital displays",
-    "3. Insert a new digital display",
-    "4. Delete a digital display",
-    "5. Update a digital display",
-    "6. reset connection",
-    "7. Logout"
-]
+
 
 def search_display():
     global dbCursor  # Use the global database cursor
@@ -504,6 +495,17 @@ def clear_terminal():
     else:
         os.system('clear')
 
+
+
+# Main menu options
+options = [
+    "1. Display all digital displays",
+    "2. Search for digital displays",
+    "3. Insert a new digital display",
+    "4. Delete a digital display",
+    "5. Update a digital display",
+    "6. Logout"
+]
 # Main program loop
 def main():
     login()  # Prompt for login before showing the menu
@@ -522,9 +524,6 @@ def main():
         elif choice == 4:
             update_display()
         elif choice == 5:
-            clear_terminal()
-            login()
-        elif choice == 6:
             logout()
         else:
             print("Invalid choice, please try again.")
